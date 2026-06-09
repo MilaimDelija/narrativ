@@ -1,0 +1,7 @@
+networkx>=3.0
+datasketch>=1.6
+numpy>=1.24
+scikit-learn>=1.3
+python-dateutil>=2.8
+# optional, only if you enable the semantic content layer:
+# sentence-transformers>=2.2

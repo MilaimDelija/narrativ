@@ -1,0 +1,209 @@
+{
+  "topic": "#protesta",
+  "generated_at": "2026-06-09T22:21:09.720696+00:00",
+  "reach_unit": "activity-weighted estimate (1 + log followers)",
+  "timeline": [
+    {
+      "label": "18:10",
+      "minute": 0,
+      "organic": 50.8,
+      "coordinated": 0.0,
+      "paid": 0.0
+    },
+    {
+      "label": "18:20",
+      "minute": 10,
+      "organic": 18.0,
+      "coordinated": 0.0,
+      "paid": 0.0
+    },
+    {
+      "label": "18:30",
+      "minute": 20,
+      "organic": 75.0,
+      "coordinated": 0.0,
+      "paid": 0.0
+    },
+    {
+      "label": "18:40",
+      "minute": 30,
+      "organic": 50.2,
+      "coordinated": 145.9,
+      "paid": 0.0
+    },
+    {
+      "label": "18:50",
+      "minute": 40,
+      "organic": 59.1,
+      "coordinated": 0.0,
+      "paid": 0.0
+    },
+    {
+      "label": "19:00",
+      "minute": 50,
+      "organic": 8.4,
+      "coordinated": 0.0,
+      "paid": 0.0
+    },
+    {
+      "label": "19:10",
+      "minute": 60,
+      "organic": 17.7,
+      "coordinated": 0.0,
+      "paid": 22.0
+    },
+    {
+      "label": "19:20",
+      "minute": 70,
+      "organic": 42.6,
+      "coordinated": 0.0,
+      "paid": 0.0
+    },
+    {
+      "label": "19:30",
+      "minute": 80,
+      "organic": 42.3,
+      "coordinated": 145.9,
+      "paid": 11.7
+    },
+    {
+      "label": "19:40",
+      "minute": 90,
+      "organic": 49.1,
+      "coordinated": 0.0,
+      "paid": 11.7
+    },
+    {
+      "label": "19:50",
+      "minute": 100,
+      "organic": 7.6,
+      "coordinated": 0.0,
+      "paid": 12.2
+    },
+    {
+      "label": "20:00",
+      "minute": 110,
+      "organic": 34.3,
+      "coordinated": 0.0,
+      "paid": 0.0
+    },
+    {
+      "label": "20:10",
+      "minute": 120,
+      "organic": 40.2,
+      "coordinated": 0.0,
+      "paid": 10.4
+    },
+    {
+      "label": "20:20",
+      "minute": 130,
+      "organic": 17.7,
+      "coordinated": 0.0,
+      "paid": 11.7
+    },
+    {
+      "label": "20:30",
+      "minute": 140,
+      "organic": 32.0,
+      "coordinated": 145.9,
+      "paid": 11.1
+    },
+    {
+      "label": "20:40",
+      "minute": 150,
+      "organic": 25.5,
+      "coordinated": 0.0,
+      "paid": 33.2
+    },
+    {
+      "label": "20:50",
+      "minute": 160,
+      "organic": 26.2,
+      "coordinated": 0.0,
+      "paid": 0.0
+    },
+    {
+      "label": "21:00",
+      "minute": 170,
+      "organic": 50.4,
+      "coordinated": 0.0,
+      "paid": 11.7
+    },
+    {
+      "label": "21:10",
+      "minute": 180,
+      "organic": 64.4,
+      "coordinated": 0.0,
+      "paid": 0.0
+    },
+    {
+      "label": "21:20",
+      "minute": 190,
+      "organic": 57.1,
+      "coordinated": 0.0,
+      "paid": 0.0
+    },
+    {
+      "label": "21:30",
+      "minute": 200,
+      "organic": 53.1,
+      "coordinated": 0.0,
+      "paid": 23.9
+    },
+    {
+      "label": "21:40",
+      "minute": 210,
+      "organic": 66.4,
+      "coordinated": 0.0,
+      "paid": 12.2
+    },
+    {
+      "label": "21:50",
+      "minute": 220,
+      "organic": 41.9,
+      "coordinated": 0.0,
+      "paid": 22.2
+    }
+  ],
+  "totals": {
+    "organic": 930.1,
+    "coordinated": 437.7,
+    "paid": 194.0,
+    "all": 1561.8
+  },
+  "coordinated_markers": [
+    "18:40",
+    "19:30",
+    "20:30"
+  ],
+  "evidence": [
+    "12 accounts flagged across multiple independent signals.",
+    "A pod of 12 accounts with reciprocity 1.0 (closed mutual-amplification ring).",
+    "6168 cross-account near-duplicate post pairs (shared copy)."
+  ],
+  "clusters": [
+    {
+      "cluster_id": 0,
+      "size": 12,
+      "members": [
+        "bot_8",
+        "bot_1",
+        "bot_11",
+        "bot_2",
+        "bot_6",
+        "bot_9",
+        "bot_7",
+        "bot_5",
+        "bot_4",
+        "bot_3",
+        "bot_10",
+        "bot_0"
+      ],
+      "reciprocity": 1.0,
+      "density": 0.182,
+      "suspicion": 0.673
+    }
+  ],
+  "flagged_count": 12,
+  "tlp": "TLP:AMBER"
+}
