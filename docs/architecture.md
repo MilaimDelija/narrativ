@@ -1,59 +1,121 @@
 # NARRATIV — Architecture
 
-## Overview
+## System Overview
 
 ```
-[Data Sources] → [CIB Engine] → [FastAPI] → [Next.js Dashboard]
-                      ↓
-               [Blockchain Anchor]
-               (Polygon Amoy)
+[Data Sources]
+      │
+      ▼
+[FastAPI /full endpoint]
+      │
+      ├─→ [CIB Detector]          coordination_engine.py
+      │         │ flagged accounts, clusters, graph
+      ├─→ [Narrative Tracker]     narrative_tracker.py
+      │         │ atoms, provenance chains, spread velocity
+      ├─→ [Dashboard Export]      dashboard_export.py
+      │         │ organic / coordinated / paid time series
+      ├─→ [Prebunking Engine]     prebunking_engine.py
+      │         │ technique cards (sq / de / en)
+      └─→ [Blockchain Anchor]     blockchain_anchor.py
+                │ keccak256 hash → Polygon Amoy
+
+[Neon PostgreSQL] ← persisted reports, cards, anchor proofs
+[Upstash Redis]   ← rate limiting, queue
+
+[Next.js Dashboard]
+  ├── TransparencyDashboard  (organic/coordinated/paid chart)
+  ├── NarrativeTracker       (provenance timeline + network graph)
+  ├── PrebunkingPanel        (technique cards by language)
+  └── AnchorView             (blockchain proof display)
 ```
 
-## CIB Engine (engine/)
+## CIB Engine — Four Signal Layers
 
-Four independent signal layers, combined score only flags when ≥ 2 layers fire:
+| Layer | Method | Library | Weight |
+|-------|--------|---------|--------|
+| Temporal | Co-firing window (60s buckets) | stdlib | 30% |
+| Content | MinHash + LSH (threshold 0.7, 128 perm) | datasketch | 30% |
+| Network | Louvain community detection | networkx | 25% |
+| Metadata | Age burst, avatar, follower ratio | stdlib | 15% |
 
-| Layer | Method | Library |
-|-------|--------|---------|
-| Temporal | Co-firing window (60s buckets) | stdlib |
-| Content | MinHash + LSH (threshold 0.7, 128 perm) | datasketch |
-| Network | Louvain community detection | networkx |
-| Metadata | Age burst, avatar, follower ratio | stdlib |
+**Flag condition:** combined score ≥ 0.55 AND ≥ 2 independent signals active.  
+**Accuracy (demo):** 12/12 bots caught · 0/40 citizens false-flagged.
 
-**Scoring weights:** temporal 30% · content 30% · network 25% · metadata 15%  
-**Flag threshold:** combined ≥ 0.55 AND ≥ 2 active signals  
-**Design principle:** under-flag preferred — a missed bot is recoverable, a false-flagged citizen is the exact harm this engine exists to avoid.
+## Narrative Tracker
 
-## API (api/)
+Clusters posts into narrative "atoms" via MinHash + LSH (threshold 0.45).  
+For each atom:
+- Identifies seed (earliest post) as origin point
+- Builds directed provenance graph (amplification edges)
+- Computes spread velocity (accounts/hour in first 30 minutes)
+- Classifies account roles: origin / early_spreader / amplifier / late_adopter
+- Counts mutations (same narrative, different wording)
 
-FastAPI application, deployed on Render.
+## Prebunking Engine
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | Health check |
-| `/analyze` | POST | Raw CIB engine report |
-| `/dashboard` | POST | Dashboard-ready payload |
-| `/demo` | GET | Pre-computed demo run |
+Detects active manipulation techniques from CIB + Tracker signals:
+- `coordinated_amplification` — high reciprocity clusters
+- `copy_paste_campaign` — many duplicate post pairs
+- `astroturfing` — many new accounts with high metadata score
+- `velocity_manipulation` — fast narrative + CIB involvement
+- `source_transparency` — always included
 
-## Frontend (frontend/)
-
-Next.js 14 application, deployed on Vercel.  
-Main component: `TransparencyDashboard` — consumes dashboard payload, renders stacked area chart with organic/coordinated/paid decomposition.
+Generates cards in Albanian (sq), German (de), English (en).  
+Uses Groq API (Llama 3.3 70B) if configured; falls back to curated templates.
 
 ## Blockchain Anchoring
 
-Evidence packets are anchored on Polygon Amoy (contract 0x1F04BCD4C6B97D201654F2Aa2a9F3cf91A35Ab33) via keccak256 hash of the report JSON. This makes documented campaigns tamper-evident.
+- Hash: keccak256 of canonical JSON (keys sorted)
+- Contract: `0x1F04BCD4C6B97D201654F2Aa2a9F3cf91A35Ab33` on Polygon Amoy
+- Function: `storeHash(bytes32 reportHash, string reportId)`
+- Fallback: local-only record with `pending_reason` if wallet not configured
 
-## ATIP Integration
+## API Endpoints
 
-Engine output is directly compatible with ATIP surfaces:
-- `report["graph"]` → Network Graph
-- `report["clusters"]` → Campaign Tracker  
-- `report["tlp"]` → TLP classification
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/` | Health check |
+| POST | `/analyze` | Raw CIB report |
+| POST | `/dashboard` | CIB + dashboard payload |
+| POST | `/full` | Complete pipeline (all modules) |
+| GET | `/demo` | Pre-computed demo run |
+| GET | `/reports` | List stored reports |
+| GET | `/reports/{id}` | Get stored report |
+| POST | `/prebunk` | Generate prebunking for stored report |
 
 ## Deployment
 
-- **API:** Render — `uvicorn main:app --host 0.0.0.0 --port $PORT`
-- **Frontend:** Vercel — Next.js auto-detected
-- **Database:** Neon PostgreSQL
-- **Cache:** Upstash Redis
+| Service | Platform | Config |
+|---------|----------|--------|
+| API | Render | `uvicorn main:app --host 0.0.0.0 --port $PORT` |
+| Frontend | Vercel | Next.js auto-detect, root: `frontend/` |
+| Database | Neon PostgreSQL | `DATABASE_URL` env var |
+| Cache | Upstash Redis | `UPSTASH_REDIS_REST_URL` + `_TOKEN` |
+
+## Environment Variables
+
+```
+# API (Render)
+DATABASE_URL=postgresql://...
+UPSTASH_REDIS_REST_URL=https://...
+UPSTASH_REDIS_REST_TOKEN=...
+GROQ_API_KEY=...
+WALLET_PRIVATE_KEY=...
+POLYGON_RPC_URL=https://rpc-amoy.polygon.technology
+ALLOWED_ORIGINS=https://narrativ.vercel.app
+
+# Frontend (Vercel)
+NEXT_PUBLIC_API_URL=https://narrativ-api.onrender.com
+```
+
+## ATIP Compatibility
+
+Engine output maps directly to ATIP surfaces without transformation:
+
+| NARRATIV field | ATIP surface |
+|----------------|-------------|
+| `cib.graph` | Network Graph view |
+| `cib.clusters` | Campaign Tracker entries |
+| `cib.flagged_accounts` | Review queue |
+| `cib.tlp` | TLP classification |
+| `cib.duplicate_evidence` | Evidence export |
