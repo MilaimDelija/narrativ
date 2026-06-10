@@ -10,41 +10,43 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const PALETTE = {
   bg: "#EEF1F5", surface: "#FFFFFF", ink: "#16202B", muted: "#5C6B7A",
   hairline: "#D7DEE6", accent: "#1A3A5C", accent2: "#2E6DA4",
-  green: "#1F6B50", amber: "#7A4A00",
+  amber: "#7A4A00",
 };
 
 const TABS = [
-  { id: "dashboard", label: "Transparency Dashboard" },
+  { id: "dashboard",  label: "Transparency Dashboard" },
   { id: "narratives", label: "Narrative Tracker" },
   { id: "prebunking", label: "Prebunking" },
-  { id: "anchor",    label: "Audit Anchor" },
+  { id: "anchor",     label: "Audit Anchor" },
 ];
 
 function AnchorView({ proof }: { proof: any }) {
-  if (!proof) return null;
+  if (!proof) return (
+    <div style={{ padding: 24, color: PALETTE.muted, fontFamily: "Arial",
+      fontSize: 14 }}>No anchor data available.</div>
+  );
   return (
     <div style={{ fontFamily: "Arial", color: PALETTE.ink }}>
       <div style={{ fontSize: 15, fontWeight: 700, color: PALETTE.accent,
         marginBottom: 16 }}>Blockchain Audit Anchor</div>
-      {[
-        ["Report ID",    proof.report_id],
+      {([
+        ["Report ID",       proof.report_id],
         ["Hash (keccak256)", proof.report_hash],
-        ["Anchored at",  proof.anchored_at],
-        ["On-chain",     proof.on_chain ? "✓ Yes" : "⚠ Pending"],
-        ["Network",      proof.network],
-        ["TX Hash",      proof.tx_hash || "—"],
-        ["Block",        proof.block_number?.toString() || "—"],
-        ["Contract",     proof.contract_address],
-      ].map(([k, v]) => (
-        <div key={k as string} style={{ display: "flex", gap: 12, marginBottom: 10,
+        ["Anchored at",     proof.anchored_at],
+        ["On-chain",        proof.on_chain ? "✓ Yes" : "⚠ Pending"],
+        ["Network",         proof.network],
+        ["TX Hash",         proof.tx_hash || "—"],
+        ["Block",           proof.block_number?.toString() || "—"],
+        ["Contract",        proof.contract_address],
+      ] as [string,string][]).map(([k, v]) => (
+        <div key={k} style={{ display: "flex", gap: 12, marginBottom: 8,
           padding: "8px 12px", background: PALETTE.surface,
           border: `1px solid ${PALETTE.hairline}`, borderRadius: 6,
           fontSize: 13 }}>
-          <span style={{ color: PALETTE.muted, minWidth: 140, flexShrink: 0,
-            fontWeight: 600 }}>{k as string}</span>
-          <span style={{ fontFamily: typeof v === "string" && v.startsWith("0x")
-            ? "monospace" : "inherit",
-            wordBreak: "break-all", color: PALETTE.ink }}>{v as string}</span>
+          <span style={{ color: PALETTE.muted, minWidth: 150, flexShrink: 0,
+            fontWeight: 600 }}>{k}</span>
+          <span style={{ fontFamily: v?.startsWith?.("0x") ? "monospace" : "inherit",
+            wordBreak: "break-all" }}>{v}</span>
         </div>
       ))}
       {proof.pending_reason && (
@@ -59,37 +61,32 @@ function AnchorView({ proof }: { proof: any }) {
 }
 
 export default function Home() {
-  const [tab, setTab] = useState("dashboard");
+  const [tab, setTab]       = useState("dashboard");
+  const [data, setData]     = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [fullData, setFullData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError]   = useState<string | null>(null);
 
   useEffect(() => {
-    // First try /demo for the dashboard data, then build the rest from it
-    fetch(`${API_URL}/demo`)
-      .then((r) => r.json())
-      .then((d) => {
-        // demo endpoint returns dashboard data; wrap in a full-data structure
-        setFullData({ dashboard: d, narratives: null, prebunking: null, anchor: null });
-        setLoading(false);
-      })
-      .catch(() => {
-        setError("API unreachable — showing embedded demo data");
-        setLoading(false);
-      });
+    fetch(`${API_URL}/demo/full`)
+      .then((r) => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+      .then((d) => { setData(d); setLoading(false); })
+      .catch((e) => { setError(e.message); setLoading(false); });
   }, []);
 
   if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center",
-      minHeight: "100vh", fontFamily: "Arial", color: PALETTE.accent, fontSize: 18,
-      background: PALETTE.bg }}>
-      Loading NARRATIV…
+    <div style={{ display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      minHeight: "100vh", fontFamily: "Arial",
+      color: PALETTE.accent, fontSize: 18, background: PALETTE.bg, gap: 12 }}>
+      <div>Loading NARRATIV…</div>
+      <div style={{ fontSize: 13, color: PALETTE.muted }}>
+        Running full pipeline — may take 10–15 seconds on first load
+      </div>
     </div>
   );
 
   return (
-    <div style={{ minHeight: "100vh", background: PALETTE.bg,
-      fontFamily: "Arial" }}>
+    <div style={{ minHeight: "100vh", background: PALETTE.bg, fontFamily: "Arial" }}>
       {/* Top bar */}
       <div style={{ background: PALETTE.accent, color: "#fff",
         padding: "0 24px", display: "flex", alignItems: "center",
@@ -102,15 +99,13 @@ export default function Home() {
             Influence Operation Transparency
           </span>
         </div>
-        <div style={{ fontSize: 11, opacity: 0.6 }}>
-          Neuronium Engineers
-        </div>
+        <div style={{ fontSize: 11, opacity: 0.6 }}>Neuronium Engineers</div>
       </div>
 
       {/* Tabs */}
       <div style={{ background: PALETTE.surface,
         borderBottom: `1px solid ${PALETTE.hairline}`,
-        padding: "0 24px", display: "flex", gap: 0 }}>
+        padding: "0 24px", display: "flex" }}>
         {TABS.map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             background: "none", border: "none", cursor: "pointer",
@@ -124,24 +119,16 @@ export default function Home() {
         ))}
         {error && (
           <span style={{ marginLeft: "auto", alignSelf: "center",
-            fontSize: 11, color: PALETTE.amber }}>{error}</span>
+            fontSize: 11, color: PALETTE.amber }}>⚠ {error}</span>
         )}
       </div>
 
       {/* Content */}
-      <div style={{ padding: "24px", maxWidth: 1100, margin: "0 auto" }}>
-        {tab === "dashboard" && (
-          <TransparencyDashboard data={fullData?.dashboard ?? undefined} />
-        )}
-        {tab === "narratives" && (
-          <NarrativeTracker data={fullData?.narratives} />
-        )}
-        {tab === "prebunking" && (
-          <PrebunkingPanel data={fullData?.prebunking} />
-        )}
-        {tab === "anchor" && (
-          <AnchorView proof={fullData?.anchor} />
-        )}
+      <div style={{ padding: 24, maxWidth: 1100, margin: "0 auto" }}>
+        {tab === "dashboard"  && <TransparencyDashboard data={data?.dashboard} />}
+        {tab === "narratives" && <NarrativeTracker data={data?.narrative_tracker} />}
+        {tab === "prebunking" && <PrebunkingPanel data={data?.prebunking} />}
+        {tab === "anchor"     && <AnchorView proof={data?.anchor} />}
       </div>
     </div>
   );

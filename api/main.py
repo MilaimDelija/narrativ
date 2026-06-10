@@ -309,3 +309,44 @@ async def generate_prebunk(req: PrebunkRequest) -> dict[str, Any]:
         cib, tracker, atom_id=req.atom_id)
     await save_prebunk_cards(pool, req.report_id, result["cards"])
     return result
+
+
+@app.get("/demo/full", tags=["demo"])
+async def demo_full() -> dict[str, Any]:
+    """
+    Full pipeline run on the built-in demo dataset.
+    Returns CIB + Narrative Tracker + Prebunking + Anchor — all tabs populated.
+    """
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent.parent / "engine"))
+    import demo as demo_module
+
+    posts    = demo_module.posts
+    accounts = demo_module.accounts
+    fm       = {a.account_id: a.followers for a in accounts}
+
+    cfg = EngineConfig(tlp="TLP:AMBER", review_threshold=0.55, min_active_signals=2)
+    cib_report     = CoordinationEngine(config=cfg).analyze(posts, accounts)
+    tracker_report = NarrativeTracker().track(posts, follower_map=fm)
+    dashboard_data = export_for_dashboard(cib_report, posts, accounts, topic="#protesta")
+    prebunk_report = PrebunkingEngine().generate(cib_report, tracker_report)
+    proof          = BlockchainAnchor().anchor({**cib_report, "topic": "#protesta"})
+
+    if _pool:
+        try:
+            await save_report(_pool, proof.report_id, "#protesta", "TLP:AMBER",
+                               cib_report, tracker_report, dashboard_data)
+            await save_anchor(_pool, proof.as_dict())
+            await save_prebunk_cards(_pool, proof.report_id, prebunk_report["cards"])
+        except Exception as exc:
+            log.warning(f"Demo/full DB persist: {exc}")
+
+    return {
+        "report_id":         proof.report_id,
+        "cib":               cib_report,
+        "narrative_tracker": tracker_report,
+        "dashboard":         dashboard_data,
+        "prebunking":        prebunk_report,
+        "anchor":            proof.as_dict(),
+    }
