@@ -11,6 +11,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const PALETTE = {
   bg: "#EEF1F5", surface: "#FFFFFF", ink: "#16202B", muted: "#5C6B7A",
   hairline: "#D7DEE6", accent: "#1A3A5C", accent2: "#2E6DA4", amber: "#7A4A00",
+  green: "#1F6B50",
 };
 
 const TABS = [
@@ -61,34 +62,60 @@ function AnchorView({ proof }: { proof: any }) {
   );
 }
 
+function LoadingBanner({ status }: { status: string }) {
+  return (
+    <div style={{ background: "#EAF2FB",
+      border: `1px solid #B3D4F0`, borderRadius: 8,
+      padding: "12px 16px", marginBottom: 20,
+      display: "flex", alignItems: "center", gap: 12,
+      fontFamily: "Arial", fontSize: 13, color: PALETTE.accent2 }}>
+      <span style={{ fontSize: 18 }}>⏳</span>
+      <div>
+        <div style={{ fontWeight: 600 }}>Loading demo pipeline…</div>
+        <div style={{ color: PALETTE.muted, fontSize: 12, marginTop: 2 }}>
+          {status} — API cold start may take up to 60 seconds.
+          You can already use <strong>New Analysis</strong> to upload your own data.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
-  const [tab, setTab]         = useState("dashboard");
+  const [tab, setTab]         = useState("upload");
   const [data, setData]       = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadingDemo, setLoadingDemo] = useState(true);
+  const [loadStatus, setLoadStatus]   = useState("Connecting to API…");
   const [error, setError]     = useState<string | null>(null);
 
   useEffect(() => {
+    const t1 = setTimeout(() => setLoadStatus("Running CIB engine…"), 5000);
+    const t2 = setTimeout(() => setLoadStatus("Tracking narratives…"), 15000);
+    const t3 = setTimeout(() => setLoadStatus("Generating prebunking cards…"), 25000);
+
     fetch(`${API_URL}/demo/full`)
       .then(r => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
-      .then(d => { setData(d); setLoading(false); })
-      .catch(e => { setError(e.message); setLoading(false); });
+      .then(d => {
+        setData(d);
+        setLoadingDemo(false);
+        // Auto-switch to dashboard only if still on upload tab
+        setTab(prev => prev === "upload" ? "dashboard" : prev);
+      })
+      .catch(e => {
+        setError(`Demo unavailable: ${e.message}`);
+        setLoadingDemo(false);
+      })
+      .finally(() => {
+        clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+      });
+
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
   function handleNewResult(result: any) {
     setData(result);
     setTab("dashboard");
   }
-
-  if (loading) return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center",
-      justifyContent: "center", minHeight: "100vh", fontFamily: "Arial",
-      color: PALETTE.accent, fontSize: 18, background: PALETTE.bg, gap: 12 }}>
-      <div>Loading NARRATIV…</div>
-      <div style={{ fontSize: 13, color: PALETTE.muted }}>
-        Running pipeline — may take 10–15 seconds on first load
-      </div>
-    </div>
-  );
 
   return (
     <div style={{ minHeight: "100vh", background: PALETTE.bg, fontFamily: "Arial" }}>
@@ -104,11 +131,26 @@ export default function Home() {
             Influence Operation Transparency
           </span>
         </div>
-        {data?.report_id && (
-          <div style={{ fontSize: 11, opacity: 0.7, fontFamily: "monospace" }}>
-            {data.report_id}
-          </div>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {data?.report_id && (
+            <span style={{ fontSize: 11, opacity: 0.6,
+              fontFamily: "monospace" }}>{data.report_id}</span>
+          )}
+          {loadingDemo && (
+            <span style={{ fontSize: 11, opacity: 0.7,
+              background: "rgba(255,255,255,0.15)",
+              padding: "3px 8px", borderRadius: 4 }}>
+              ⏳ Loading demo…
+            </span>
+          )}
+          {!loadingDemo && data && (
+            <span style={{ fontSize: 11, opacity: 0.7,
+              background: "rgba(255,255,255,0.15)",
+              padding: "3px 8px", borderRadius: 4, color: "#90EE90" }}>
+              ✓ Demo loaded
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
@@ -134,6 +176,9 @@ export default function Home() {
 
       {/* Content */}
       <div style={{ padding: 24, maxWidth: 1100, margin: "0 auto" }}>
+        {loadingDemo && tab !== "upload" && (
+          <LoadingBanner status={loadStatus} />
+        )}
         {tab === "upload"     && <UploadPanel onResult={handleNewResult} />}
         {tab === "dashboard"  && <TransparencyDashboard data={data?.dashboard} />}
         {tab === "narratives" && <NarrativeTracker data={data?.narrative_tracker} />}
