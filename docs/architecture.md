@@ -119,3 +119,28 @@ Engine output maps directly to ATIP surfaces without transformation:
 | `cib.flagged_accounts` | Review queue |
 | `cib.tlp` | TLP classification |
 | `cib.duplicate_evidence` | Evidence export |
+
+## Input Layer (Connectors)
+
+| Connector | Source | Config |
+|-----------|--------|--------|
+| CSV import | Any exported dataset | No config needed |
+| JSON upload | Raw Post/Account JSON | No config needed |
+| Twitter/X | API v2 search | `TWITTER_BEARER_TOKEN` |
+| Telegram | Public channel messages | `TELEGRAM_API_ID` + `TELEGRAM_API_HASH` |
+
+### API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/ingest/upload` | CSV or JSON file → full analysis |
+| POST | `/ingest/twitter` | Twitter query → full analysis |
+| POST | `/ingest/telegram` | Telegram channels → full analysis |
+| GET | `/monitor` | List scheduled jobs |
+| POST | `/monitor` | Add monitoring job |
+| DELETE | `/monitor/{id}` | Remove monitoring job |
+
+### Scheduler
+
+Automated monitoring via APScheduler — runs CIB analysis at configured
+intervals and sends webhook alerts when flagged accounts exceed threshold.

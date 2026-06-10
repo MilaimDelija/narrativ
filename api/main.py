@@ -350,3 +350,8 @@ async def demo_full() -> dict[str, Any]:
         "prebunking":        prebunk_report,
         "anchor":            proof.as_dict(),
     }
+
+
+# ── Ingest routes (input layer) ───────────────────────────────────────────
+from routes.ingest import router as ingest_router
+app.include_router(ingest_router)
